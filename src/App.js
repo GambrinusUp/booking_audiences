@@ -1,24 +1,27 @@
-import logo from './logo.svg';
 import './App.css';
+import {Layout} from "antd";
+import {Content, Header} from "antd/es/layout/layout";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Schedule from "./pages/schedule_page/Schedule";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+      <Router>
+          <Layout>
+              <Header style={{
+                  background: '#0072bc',
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 1,
+                  color: '#FFFFFF'
+              }}>Header</Header>
+              <Content>
+                  <Routes>
+                      <Route path='/' element={<Schedule />} />
+                  </Routes>
+              </Content>
+          </Layout>
+      </Router>
   );
 }
 
