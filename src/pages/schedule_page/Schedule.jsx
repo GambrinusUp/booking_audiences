@@ -1,40 +1,53 @@
 import styles from './schedule.module.css'
 import React, {useEffect, useState} from "react";
 import moment from 'moment';
-import {Button} from "antd";
+import {Button, Tag} from "antd";
 import {EditOutlined, LeftOutlined, RightOutlined} from "@ant-design/icons";
+import {useDispatch, useSelector} from "react-redux";
+import {getScheduleThunkCreator} from "../../store/scheduleReducer";
+import {useParams} from "react-router-dom";
 
 function Schedule () {
-    const [isAdmin, setIsAdmin] = useState(true);
+    const { id } = useParams();
+    const scheduleData = useSelector((state) => state.schedulePage.schedule);
+    const dispatch = useDispatch();
+    const [isAdmin, setIsAdmin] = useState(false);
     const [currentWeekDates, setCurrentWeekDates] = useState([]);
     const times = [
         {
             start: '8:45',
-            end: '10:20'
+            end: '10:20',
+            lessonNumber: 1
         },
         {
             start: '10:35',
-            end: '12:10'
+            end: '12:10',
+            lessonNumber: 2
         },
         {
             start: '12:25',
-            end: '14:00'
+            end: '14:00',
+            lessonNumber: 3
         },
         {
             start: '14:45',
-            end: '16:20'
+            end: '16:20',
+            lessonNumber: 4
         },
         {
             start: '16:35',
-            end: '18:10'
+            end: '18:10',
+            lessonNumber: 5
         },
         {
             start: '18:25',
-            end: '20:00'
+            end: '20:00',
+            lessonNumber: 6
         },
         {
             start: '20:15',
-            end: '21:50'
+            end: '21:50',
+            lessonNumber: 7
         }
     ];
     const month = {
@@ -65,7 +78,6 @@ function Schedule () {
         const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
         const endOfWeek = currentDate.endOf('isoWeek').format('YYYY-MM-DD');
         const weekDates = [];
-        // Создаем массив дат с начала до конца недели
         let currentDay = moment(startOfWeek);
         while (currentDay.isSameOrBefore(endOfWeek)) {
             weekDates.push(currentDay.format('YYYY-MM-DD'));
@@ -73,7 +85,10 @@ function Schedule () {
         }
         setCurrentWeekDates(weekDates);
         console.log(weekDates);
-    }, []);
+        console.log(currentWeekDates[0]);
+        dispatch(getScheduleThunkCreator(id, weekDates[0], weekDates[5]));
+        console.log(scheduleData);
+    }, [dispatch, id]);
 
     function updateWeekDates(weeksToAdd) {
         setCurrentWeekDates((prevWeekDates) => {
@@ -87,11 +102,12 @@ function Schedule () {
                 currentDay.add(1, 'day');
             }
 
+            dispatch(getScheduleThunkCreator('1c232119-97c7-11eb-812c-005056bc52bb', newWeekDates[0], newWeekDates[5]));
+
             return newWeekDates;
         });
         console.log(currentWeekDates);
     }
-
 
     return(
         <>
@@ -123,15 +139,6 @@ function Schedule () {
                             <span>{`${moment(date).format('D')} ${month[moment(date).format('MM')]}`}</span>
                         </div>
                     ))}
-                    {/*<div className={styles.dayCell}>
-                        Пн
-                        <span>bn</span>
-                    </div>
-                    <div className={styles.dayCell}>Вт</div>
-                    <div className={styles.dayCell}>Ср</div>
-                    <div className={styles.dayCell}>Чт</div>
-                    <div className={styles.dayCell}>Пт</div>
-                    <div className={styles.dayCell}>Сб</div>*/}
                     {times.map((lessonTime, index) => {
                         return (
                             <React.Fragment key={index}>
@@ -139,14 +146,58 @@ function Schedule () {
                                     <span>{lessonTime.start}</span>
                                     <span>{lessonTime.end}</span>
                                 </div>
-                                <div className={styles.emptyCell}>
+                                {scheduleData && scheduleData.map((scheduleColumn, index) => {
+                                    return <div className={styles.emptyCell} key={scheduleColumn.date}>
+                                        {
+                                            scheduleColumn.lessons.filter(lesson => lesson.lessonNumber ===
+                                                lessonTime.lessonNumber).map(lesson => {
+                                                console.log(lesson);
+                                                return lesson.type === "LESSON" ?
+
+                                                    <Tag color="geekblue"
+                                                         bordered
+                                                         style={{width: '100%',
+                                                             display:'flex', flexDirection:'column',
+                                                             paddingTop:4, paddingBottom: 4,
+                                                             whiteSpace: "pre-wrap",
+                                                             overflowWrap: "break-word"}}>
+                                                        <span style={{fontSize: 16,
+                                                            fontWeight: 500}}>{lesson.title}</span>
+                                                        <span style={{fontSize: 12}}>{lesson.audience.name}</span>
+                                                        <span style={{fontSize: 13}}>{lesson.groups.map(group => group.name).join(", ")}</span>
+                                                    </Tag> : null
+
+                                                    /*<Tag
+                                                        key={lesson.id}>
+                                                        <span className={"lesson-title"}>{lesson.title}</span>
+                                                        <span className={"lesson-auditory"}>{lesson.audience.name}</span>
+                                                        <span className={"lesson-group"}>
+                                                            {lesson.groups.map(group => group.name).join(", ")}</span>
+                                                    </Tag> : null*/
+                                            })
+                                        }
+                                    </div>
+                                })}
+                                {/*<div className={styles.emptyCell}>
                                     <div className="lesson">lesson</div>
+                                </div>
+                                <div className={styles.emptyCell}>
+                                    <Tag color="geekblue"
+                                         bordered
+                                         style={{width: '100%', height: '100%',
+                                         display:'flex', flexDirection:'column',
+                                         paddingTop: 4, paddingBottom: 4}}>
+                                        <span style={{fontSize: 16,
+                                        fontWeight: 500}}>Name lesson</span>
+                                        <span style={{fontSize: 12}}>Building</span>
+                                        <span style={{fontSize: 13}}>Group</span>
+                                    </Tag>
                                 </div>
                                 <div className={styles.emptyCell}></div>
                                 <div className={styles.emptyCell}></div>
                                 <div className={styles.emptyCell}></div>
-                                <div className={styles.emptyCell}></div>
-                                <div className={styles.emptyCell}></div>
+                                <div className={styles.emptyCell}></div>*/}
+
                             </React.Fragment>
                         );
                     })}

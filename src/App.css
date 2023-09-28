@@ -55,3 +55,10 @@
   background-color: #555;
 }
 
+.ant-tag {
+  margin-bottom: 4px;
+}
+
+.ant-tag:last-child {
+  margin-bottom: 0;
+}

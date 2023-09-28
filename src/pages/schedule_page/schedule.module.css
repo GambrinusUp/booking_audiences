@@ -22,8 +22,7 @@
 }
 
 .timeCell,
-.dayCell,
-.emptyCell {
+.dayCell {
     min-width: 80px;
     padding: 8px;
     border: 1px solid #ccc;
@@ -39,6 +38,9 @@
 }
 
 .emptyCell {
+    min-width: 80px;
+    padding: 4px;
+    border: 1px solid #ccc;
     height: 100%;
     background-color: #f0f0f0;
 }
