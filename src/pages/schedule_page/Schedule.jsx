@@ -1,18 +1,36 @@
 import styles from './schedule.module.css'
 import React, {useEffect, useState} from "react";
 import moment from 'moment';
-import {Button, Tag} from "antd";
-import {EditOutlined, LeftOutlined, RightOutlined} from "@ant-design/icons";
+import {Button, DatePicker, Modal, Select, Tag} from "antd";
+import {EditOutlined, LeftOutlined, PlusOutlined, RightOutlined, TagOutlined} from "@ant-design/icons";
 import {useDispatch, useSelector} from "react-redux";
-import {getScheduleThunkCreator} from "../../store/scheduleReducer";
+import {getAudiencesThunkCreator, getScheduleThunkCreator} from "../../store/scheduleReducer";
 import {useParams} from "react-router-dom";
 
 function Schedule () {
     const { id } = useParams();
     const scheduleData = useSelector((state) => state.schedulePage.schedule);
+    const audiences = useSelector((state) => state.schedulePage.audiences);
     const dispatch = useDispatch();
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isStudent, setStudent] = useState(true);
+    const [isAdmin, setAdmin] = useState(false);
+    const [open, setOpen] = useState(false);
     const [currentWeekDates, setCurrentWeekDates] = useState([]);
+    const [date, setDate] = useState('');
+    const lessonColors = {
+            "LECTURE": "red",
+            "SEMINAR": "orange",
+            "PRACTICE": "geekblue",
+            "LABORATORY": "blue",
+            "INDIVIDUAL": "cyan",
+            "OTHER": "green",
+            "CONTROL_POINT": "purple",
+            "EXAM": "purple",
+            "CREDIT": "purple",
+            "DIFFERENTIAL_CREDIT": "purple",
+            "CONSULTATION": "pink",
+            "BOOKING":"default"
+    }
     const times = [
         {
             start: '8:45',
@@ -72,6 +90,20 @@ function Schedule () {
         4 : 'ПТ',
         5 : 'СБ',
     }
+    const options = audiences.map(({ id, name }) => ({
+        value: id,
+        label: name,
+    }));
+    const filterOption = (input, option) =>
+        (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+
+    const handleOk = () => {
+        setOpen(false);
+    };
+
+    const handleCancel = () => {
+        setOpen(false);
+    };
 
     useEffect(() => {
         const currentDate = moment();
@@ -88,6 +120,7 @@ function Schedule () {
         console.log(currentWeekDates[0]);
         dispatch(getScheduleThunkCreator(id, weekDates[0], weekDates[5]));
         console.log(scheduleData);
+        dispatch(getAudiencesThunkCreator());
     }, [dispatch, id]);
 
     function updateWeekDates(weeksToAdd) {
@@ -101,9 +134,7 @@ function Schedule () {
                 newWeekDates.push(currentDay.format('YYYY-MM-DD'));
                 currentDay.add(1, 'day');
             }
-
             dispatch(getScheduleThunkCreator('1c232119-97c7-11eb-812c-005056bc52bb', newWeekDates[0], newWeekDates[5]));
-
             return newWeekDates;
         });
         console.log(currentWeekDates);
@@ -120,6 +151,10 @@ function Schedule () {
                     {isAdmin && <Button icon={<EditOutlined />}
                            className={styles.medBtnWrapper}>
                         <span className={styles.hideText}>Редактировать</span>
+                    </Button>}
+                    {isStudent && <Button icon={<TagOutlined />}
+                        onClick={() => setOpen(true)}>
+                        <span className={styles.hideText}>Забронировать аудиторию</span>
                     </Button>}
                     <div className={styles.btnWrapper}>
                         <Button block style={{marginRight: 10}}
@@ -151,10 +186,9 @@ function Schedule () {
                                         {
                                             scheduleColumn.lessons.filter(lesson => lesson.lessonNumber ===
                                                 lessonTime.lessonNumber).map(lesson => {
-                                                console.log(lesson);
                                                 return lesson.type === "LESSON" ?
-
-                                                    <Tag color="geekblue"
+                                                    <Tag color={lessonColors[lesson.lessonType]}
+                                                         key={lesson.id}
                                                          bordered
                                                          style={{width: '100%',
                                                              display:'flex', flexDirection:'column',
@@ -166,43 +200,78 @@ function Schedule () {
                                                         <span style={{fontSize: 12}}>{lesson.audience.name}</span>
                                                         <span style={{fontSize: 13}}>{lesson.groups.map(group => group.name).join(", ")}</span>
                                                     </Tag> : null
-
-                                                    /*<Tag
-                                                        key={lesson.id}>
-                                                        <span className={"lesson-title"}>{lesson.title}</span>
-                                                        <span className={"lesson-auditory"}>{lesson.audience.name}</span>
-                                                        <span className={"lesson-group"}>
-                                                            {lesson.groups.map(group => group.name).join(", ")}</span>
-                                                    </Tag> : null*/
                                             })
                                         }
                                     </div>
                                 })}
-                                {/*<div className={styles.emptyCell}>
-                                    <div className="lesson">lesson</div>
-                                </div>
-                                <div className={styles.emptyCell}>
-                                    <Tag color="geekblue"
-                                         bordered
-                                         style={{width: '100%', height: '100%',
-                                         display:'flex', flexDirection:'column',
-                                         paddingTop: 4, paddingBottom: 4}}>
-                                        <span style={{fontSize: 16,
-                                        fontWeight: 500}}>Name lesson</span>
-                                        <span style={{fontSize: 12}}>Building</span>
-                                        <span style={{fontSize: 13}}>Group</span>
-                                    </Tag>
-                                </div>
-                                <div className={styles.emptyCell}></div>
-                                <div className={styles.emptyCell}></div>
-                                <div className={styles.emptyCell}></div>
-                                <div className={styles.emptyCell}></div>*/}
-
-                            </React.Fragment>
+                             </React.Fragment>
                         );
                     })}
                 </div>
             </div>
+            <Modal
+                title="Бронирование аудитории"
+                centered
+                open={open}
+                onOk={handleOk}
+                onCancel={handleCancel}
+                width={700}
+            >
+                Выберите день
+                <div>
+                    <DatePicker format={'YYYY-MM-DD'}
+                                onChange={(value) => setDate(value)}
+                                placeholder={'Выберите дату'}/>
+                </div>
+                Выберите пару
+                <div>
+                    <Select
+                        placeholder="Выберите пару"
+                        onChange={(value) => console.log(value)}
+                        options={[
+                            {
+                                value: '1',
+                                label: '1 пара',
+                            } ,
+                            {
+                                value: '2',
+                                label: '2 пара',
+                            },
+                            {
+                                value: '3',
+                                label: '3 пара',
+                            },
+                            {
+                                value: '4',
+                                label: '4 пара',
+                            },
+                            {
+                                value: '5',
+                                label: '5 пара',
+                            },
+                            {
+                                value: '6',
+                                label: '6 пара',
+                            },
+                            {
+                                value: '7',
+                                label: '7 пара',
+                            }
+                        ]}
+                    />
+                </div>
+                Выберите аудиторию
+                <div>
+                    <Select
+                        showSearch
+                        placeholder="Выберите аудиторию"
+                        optionFilterProp="children"
+                        filterOption={filterOption}
+                        options={options}
+                        style={{width: '100%'}}
+                    />
+                </div>
+            </Modal>
         </>
     )
 }

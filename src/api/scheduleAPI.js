@@ -13,6 +13,20 @@ function getGroupSchedule(groupId, dateFrom, dateTo) {
         })
 }
 
+function getAudiences() {
+    return axios.get('https://test.intime.kreosoft.space/api/web/v1/buildings/' +
+        '4761a634-bffd-11ea-8117-005056bc52bb/audiences')
+        .then((response) => {
+            console.log(response);
+            return {status: response.status, audiences: response.data};
+        })
+        .catch((error) => {
+            console.log(error);
+            return {status: error.status};
+        })
+}
+
 export const scheduleAPI = {
-    getGroupSchedule : getGroupSchedule
+    getGroupSchedule : getGroupSchedule,
+    getAudiences : getAudiences
 }
