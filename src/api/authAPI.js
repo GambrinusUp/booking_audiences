@@ -32,7 +32,23 @@ function login(email, password) {
         })
 }
 
+function refresh(refreshToken) {
+    return axios.post(API_URL + 'refresh', {
+        "token" : refreshToken
+    })
+        .then((response) => {
+            console.log(response);
+            localStorage.setItem("data", JSON.stringify(response.data));
+            return {status: response.status}
+        })
+        .catch((error) => {
+            console.log(error);
+            return {status: error.status};
+        })
+}
+
 export const authAPI = {
     registration : registration,
-    login : login
+    login : login,
+    refresh : refresh
 }

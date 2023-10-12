@@ -1,8 +1,8 @@
 import styles from './schedule.module.css'
 import React, {useEffect, useState} from "react";
 import moment from 'moment';
-import {Button, DatePicker, Modal, Select, Tag} from "antd";
-import {EditOutlined, LeftOutlined, PlusOutlined, RightOutlined, TagOutlined} from "@ant-design/icons";
+import {Button, DatePicker, Modal, Popconfirm, Select, Tag} from "antd";
+import {DeleteOutlined, EditOutlined, LeftOutlined, PlusOutlined, RightOutlined, TagOutlined} from "@ant-design/icons";
 import {useDispatch, useSelector} from "react-redux";
 import {getAudiencesThunkCreator, getScheduleThunkCreator} from "../../store/scheduleReducer";
 import {useParams} from "react-router-dom";
@@ -12,9 +12,10 @@ function Schedule () {
     const scheduleData = useSelector((state) => state.schedulePage.schedule);
     const audiences = useSelector((state) => state.schedulePage.audiences);
     const dispatch = useDispatch();
-    const [isStudent, setStudent] = useState(true);
+    const [isStudent, setStudent] = useState(false);
     const [isAdmin, setAdmin] = useState(false);
     const [open, setOpen] = useState(false);
+    const [openEdit, setOpenEdit] = useState(false);
     const [currentWeekDates, setCurrentWeekDates] = useState([]);
     const [date, setDate] = useState('');
     const lessonColors = {
@@ -106,6 +107,10 @@ function Schedule () {
     };
 
     useEffect(() => {
+        let object = JSON.parse (localStorage.getItem ("data"));
+        console.log(object);
+        if(object.role[0] === 'Editor')
+            setAdmin(true);
         const currentDate = moment();
         const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
         const endOfWeek = currentDate.endOf('isoWeek').format('YYYY-MM-DD');
@@ -199,6 +204,17 @@ function Schedule () {
                                                             fontWeight: 500}}>{lesson.title}</span>
                                                         <span style={{fontSize: 12}}>{lesson.audience.name}</span>
                                                         <span style={{fontSize: 13}}>{lesson.groups.map(group => group.name).join(", ")}</span>
+                                                        {isAdmin && <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
+                                                            <EditOutlined style={{fontSize: 14, paddingRight: 5}}
+                                                                onClick={() => setOpenEdit(true)}/>
+                                                            <Popconfirm
+                                                                title="Вы хотите удалить занятие?"
+                                                                //onConfirm={deleteCourse}
+                                                                okText="Да"
+                                                                cancelText="Нет">
+                                                                <DeleteOutlined style={{fontSize: 14}}/>
+                                                            </Popconfirm>
+                                                        </div>}
                                                     </Tag> : null
                                             })
                                         }
@@ -271,6 +287,16 @@ function Schedule () {
                         style={{width: '100%'}}
                     />
                 </div>
+            </Modal>
+            <Modal
+                title="Редактирование занятия"
+                centered
+                open={openEdit}
+                //onOk={handleOk}
+                onCancel={() => setOpenEdit(false)}
+                width={700}
+            >
+
             </Modal>
         </>
     )
