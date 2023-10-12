@@ -1,11 +1,98 @@
 import './App.css';
-import {Layout} from "antd";
+import {Button, DatePicker, Input, Layout, message, Modal, Select, Tabs} from "antd";
 import {Content, Header} from "antd/es/layout/layout";
 import {BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
 import Schedule from "./pages/schedule_page/Schedule";
 import SelectSchedule from "./pages/select_schedule_page/SelectSchedule";
+import React, {useEffect, useState} from "react";
+import TabPane from "antd/es/tabs/TabPane";
+import {KeyOutlined, MailOutlined, UserOutlined} from "@ant-design/icons";
+import {authAPI} from "./api/authAPI";
 
 function App() {
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [messageApi, contextHolder] = message.useMessage();
+    const [open, setOpen] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('');
+    const [activeTab, setActiveTab] = useState('1');
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    function isValidPassword(password) {
+        const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+        return passwordPattern.test(password);
+    }
+
+    function isValidEmail(email) {
+        const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+        return emailPattern.test(email);
+    }
+
+    const handleOk = () => {
+        if(!isValidEmail(email)) {
+            messageApi.warning("Неккоректный email");
+        } else {
+            console.log(password);
+            console.log(isValidPassword(password));
+            if(!isValidPassword(password)) {
+                messageApi.warning("Пароль должен быть минимум 6 символов, один не буквенно-цифровой символ, одна строчная буква и одна заглавная буква");
+            } else {
+                if (activeTab === '1') {
+                    if(email === '' || password === '') {
+                        messageApi.warning("Введите данные");
+                    }
+                    authAPI.login(email, password).then(
+                        (data) => {
+                            if(data.status === 200) {
+                                localStorage.setItem("data", JSON.stringify(data.tokens));
+                                setIsLoggedIn(true);
+                                if(data.tokens[0] === 'Editor')
+                                    setIsAdmin(true);
+                            } else {
+                                messageApi.warning("Возникла ошибка");
+                            }
+                        })
+                    // Вызовите функцию для вкладки "Войти"
+                    console.log('login');
+                    setOpen(false);
+                } else if (activeTab === '2') {
+                    if(email === '' || password === '' || username === '') {
+                        messageApi.warning("Введите данные");
+                    }
+                    authAPI.registration(email, password, username).then(
+                        (data) => {
+                            if(data.status === 200) {
+                                localStorage.setItem("data", JSON.stringify(data.tokens));
+                                setIsLoggedIn(true);
+                            } else {
+                                if(data.status === 409)
+                                    messageApi.warning("Пользователь с таким email уже существует");
+                                messageApi.warning("Возникла ошибка");
+                            }
+                        })
+                    // В
+                    // Вызовите функцию для вкладки "Зарегистрироваться"
+                    setOpen(false);
+                    console.log('registrations');
+                }
+            }
+        }
+    };
+
+    const handleCancel = () => {
+        setOpen(false);
+    };
+
+    useEffect(() => {
+        let object = JSON.parse (localStorage.getItem ("data"));
+        if(object !== null && object !== '' && object !== {}) {
+            setIsLoggedIn(true);
+            if(object.role[0] === 'Editor')
+                setIsAdmin(true);
+        }
+    }, []);
+
   return (
       <Router>
           <Layout>
@@ -23,13 +110,57 @@ function App() {
                       <Link to="/" style={{
                           color: 'white'
                       }}>Выбрать расписание</Link>
+                      {isAdmin && <Link to="/edit" style={{
+                          color: 'white',
+                          paddingLeft: 10
+                      }}>Редактирование</Link>}
                   </div>
+                  {!isLoggedIn && <div>
+                      <Button onClick={() => setOpen(true)}>
+                          Авторизация</Button>
+                  </div>}
+                  {isLoggedIn && <div>
+                      <Button onClick={() => {setIsAdmin(false); setIsLoggedIn(false); localStorage.removeItem("data")}}>
+                          Выйти</Button>
+                  </div>}
               </Header>
               <Content>
+                  {contextHolder}
                   <Routes>
                       <Route path='/schedule/:id' element={<Schedule />} />
                       <Route path='/' element={<SelectSchedule />} />
                   </Routes>
+                  <Modal
+                      centered
+                      open={open}
+                      onOk={handleOk}
+                      onCancel={handleCancel}
+                      width={700}
+                      okText={'Авторизоваться'}
+                      cancelText={'Отмена'}
+                  >
+                      <Tabs defaultActiveKey={activeTab} centered onChange={(key) => setActiveTab(key)}>
+                          <TabPane tab="Войти" key="1">
+                              <Input prefix={<MailOutlined />} placeholder="Введите email" style={{marginTop: 10}}
+                                     value={email}
+                                     onChange={(event) => setEmail(event.target.value)}/>
+                              <Input prefix={<KeyOutlined />} placeholder="Введите пароль" style={{marginTop: 10}}
+                                     value={password}
+                                     onChange={(event) => setPassword(event.target.value)}/>
+                          </TabPane>
+                          <TabPane tab="Зарегистрироваться" key="2">
+                              <Input prefix={<UserOutlined />} placeholder="Введите имя пользователя"
+                                     value={username}
+                                     onChange={(event) => setUsername(event.target.value)}/>
+                              <Input prefix={<MailOutlined />} placeholder="Введите email" style={{marginTop: 10}}
+                                     value={email}
+                                     onChange={(event) => setEmail(event.target.value)}/>
+                              <Input prefix={<KeyOutlined />} placeholder="Введите пароль" style={{marginTop: 10}}
+                                     value={password}
+                                     onChange={(event) => setPassword(event.target.value)}/>
+                          </TabPane>
+                      </Tabs>
+                  </Modal>
               </Content>
           </Layout>
       </Router>
