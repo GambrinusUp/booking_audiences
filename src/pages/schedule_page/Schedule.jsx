@@ -101,8 +101,8 @@ function Schedule () {
         });
     };
 
-    function deleteLesson (id) {
-        console.log(id);
+    function deleteLesson (idLesson) {
+        console.log(idLesson);
         const currentDate = moment();
         const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
         const endOfWeek = currentDate.endOf('isoWeek').format('YYYY-MM-DD');
@@ -116,7 +116,7 @@ function Schedule () {
 
 
         let object = JSON.parse (localStorage.getItem ("data"));
-        dispatch(deleteLessonThunkCreator(id, object.accessToken)).then(() => {
+        dispatch(deleteLessonThunkCreator(idLesson, object.accessToken)).then(() => {
             success('Занятие уадлено');
             dispatch(getScheduleThunkCreator(id, weekDates[0]));
         }).catch((status) => {
@@ -305,7 +305,7 @@ function Schedule () {
                                                                 {isAdmin && <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
                                                                     <Popconfirm
                                                                         title="Вы хотите удалить занятие?"
-                                                                        onConfirm={() => deleteLesson(lesson.lesson.lessonId)}
+                                                                        onConfirm={() => deleteLesson(lesson.lesson.id)}
                                                                         okText="Да"
                                                                         cancelText="Нет">
                                                                         <DeleteOutlined style={{fontSize: 14}}/>
