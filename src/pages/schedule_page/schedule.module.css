@@ -1,0 +1,94 @@
+.mainContainer {
+    min-height: calc(100dvh - 64px);
+    /*text-align: center;*/
+    padding: 20px;
+}
+
+.schedule {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 4px;
+    align-items: center;
+    overflow: auto;
+    background: #FFFFFF;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.timeCell, .dayCell {
+    display: flex;
+    flex-direction: column;
+}
+
+.timeCell,
+.dayCell {
+    min-width: 80px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    height: 100%;
+}
+
+.dayCell {
+    font-weight: 700;
+}
+
+.timeCell span:first-child{
+    font-weight: 700;
+}
+
+.emptyCell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 80px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    height: 100%;
+    background-color: #fafafa;
+}
+
+.panel {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    align-items: center;
+    background: #FFFFFF;
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 50px;
+    flex-wrap: nowrap;
+}
+
+.btnWrapper {
+    display: flex;
+}
+
+@media (max-width: 700px) {
+    .btnWrapper {
+        flex-direction: column;
+    }
+}
+
+.panelTitle {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.panelGroupDate {
+    display: flex;
+    flex-direction: column;
+}
+
+.medBtnWrapper {
+    background-color: #ffba00;
+}
+
+@media (max-width: 600px) {
+    .hideText {
+        font-size: 0;
+    }
+    .medBtnWrapper {
+        margin-right: 10px;
+    }
+}
