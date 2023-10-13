@@ -9,7 +9,7 @@ export const lessonColors = {
     "EXAM": "purple",
     "CREDIT": "purple",
     "DIFFERENTIAL_CREDIT": "purple",
-    "CONSULTATION": "pink",
+    "Booked": "pink",
     "BOOKING":"default"
 }
 

@@ -1,4 +1,4 @@
-import axios, {get} from "axios";
+import axios from "axios";
 
 const API_URL = 'http://26.254.104.23:8081/api/';
 

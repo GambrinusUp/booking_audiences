@@ -1,7 +1,7 @@
 import styles from './schedule.module.css'
 import React, {useEffect, useState} from "react";
 import moment from 'moment';
-import {Button, Modal, Popconfirm, Select, Tag, DatePicker, message} from "antd";
+import {Button, Modal, Popconfirm, Select, Tag, DatePicker, message, Input} from "antd";
 import {DeleteOutlined, EditOutlined, LeftOutlined, PlusOutlined, RightOutlined, TagOutlined} from "@ant-design/icons";
 import {useDispatch, useSelector} from "react-redux";
 import {
@@ -19,6 +19,7 @@ import {
     getSubjectsThunkCreator
 } from "../../store/editReducer";
 import {authAPI} from "../../api/authAPI";
+import {addBookThunkCreator} from "../../store/bookingReducer";
 
 const { RangePicker } = DatePicker;
 
@@ -49,6 +50,13 @@ function Schedule () {
     const [typeLesson, setTypeLesson] = useState('');
     const [subject, setSubject] = useState('');
     const [professor, setProfessor] = useState('');
+
+    const [bookDate, setBookDate] = useState('');
+    const [description, setDescription] = useState('');
+
+
+
+
 
     const [selectedDateRange, setSelectedDateRange] = useState([]);
 
@@ -123,6 +131,30 @@ function Schedule () {
         });
     }
 
+    const addBook = () => {
+        let object = JSON.parse (localStorage.getItem ("data"));
+        console.log(bookDate.format('YYYY-MM-DD'), selectedGroups, timeSlot, audience, description);
+        if(bookDate !== '' && selectedGroups !== [] && timeSlot !== '' && audience !== '' && description !== '') {
+            dispatch(addBookThunkCreator(bookDate.format('YYYY-MM-DD'), timeSlot, audience, selectedGroups,
+                description, object.accessToken)).then(() => {
+                success('Аудитория забронирована');
+            }).catch((status) => {
+                console.log(status);
+                if(status === 401) {
+                    authAPI.refresh(object.refreshToken).then((data) => {
+                        if(data.status === 200) {
+                            navigate(0);
+                        }
+                    })
+                } else {
+                    warning('Ошибка');
+                }
+            });
+        } else {
+            warning('Пустые поля')
+        }
+    }
+
     const handleOk = () => {
         const currentDate = moment();
         const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
@@ -165,8 +197,13 @@ function Schedule () {
     useEffect(() => {
         let object = JSON.parse (localStorage.getItem ("data"));
         console.log(object);
-        if(object.role[0] === 'Editor')
-            setAdmin(true);
+        if (object !== null) {
+            if(object.role[0] === 'Editor')
+                setAdmin(true);
+            if(object.role[0] === 'Student')
+                setStudent(true);
+        }
+
         const currentDate = moment();
         const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
         const endOfWeek = currentDate.endOf('isoWeek').format('YYYY-MM-DD');
@@ -210,7 +247,7 @@ function Schedule () {
                 {contextHolder}
                 <div className={styles.panel}>
                     <div className={styles.panelGroupDate}>
-                        <span className={styles.panelTitle}> Расписание для группы TestGroup </span>
+                        {groups && <span className={styles.panelTitle}> Расписание для группы {groups && groups.find(group => group.id === id)?.name} </span>}
                         <span>{`${currentWeekDates[0]} - ${currentWeekDates[5]}`}</span>
                     </div>
                     {isAdmin && <Button icon={<EditOutlined />}
@@ -251,31 +288,50 @@ function Schedule () {
                                         {
                                             scheduleColumn.timeslots.filter(lesson => lesson.lessonNumber ===
                                                 lessonTime.lessonNumber).map(lesson => {
-                                                return lesson.type === "Lesson" ?
-                                                    <Tag color={lessonColors[lesson.lesson.lessonType]}
-                                                         key={lesson.lesson.lessonId}
-                                                         bordered
-                                                         style={{width: '100%',
-                                                             display:'flex', flexDirection:'column',
-                                                             paddingTop:4, paddingBottom: 4,
-                                                             whiteSpace: "pre-wrap",
-                                                             overflowWrap: "break-word"}}>
+                                                if (lesson.type === "Lesson") {
+                                                        return(
+                                                            <Tag color={lessonColors[lesson.lesson.lessonType]}
+                                                                 key={lesson.lesson.lessonId}
+                                                                 bordered
+                                                                 style={{width: '100%',
+                                                                     display:'flex', flexDirection:'column',
+                                                                     paddingTop:4, paddingBottom: 4,
+                                                                     whiteSpace: "pre-wrap",
+                                                                     overflowWrap: "break-word"}}>
                                                         <span style={{fontSize: 16,
                                                             fontWeight: 500}}>{lesson.lesson.subject.name}</span>
-                                                        <span style={{fontSize: 12}}>{lesson.lesson.audience.name}</span>
-                                                        <span style={{fontSize: 13}}>{lesson.lesson.groups.map(group => group.name).join(", ")}</span>
-                                                        {isAdmin && <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
-                                                            <EditOutlined style={{fontSize: 14, paddingRight: 5}}
-                                                                onClick={() => setOpenEdit(true)}/>
-                                                            <Popconfirm
-                                                                title="Вы хотите удалить занятие?"
-                                                                onConfirm={() => deleteLesson(lesson.lesson.lessonId)}
-                                                                okText="Да"
-                                                                cancelText="Нет">
-                                                                <DeleteOutlined style={{fontSize: 14}}/>
-                                                            </Popconfirm>
-                                                        </div>}
-                                                    </Tag> : null
+                                                                <span style={{fontSize: 12}}>{lesson.lesson.audience.name}</span>
+                                                                <span style={{fontSize: 13}}>{lesson.lesson.groups.map(group => group.name).join(", ")}</span>
+                                                                {isAdmin && <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
+                                                                    <Popconfirm
+                                                                        title="Вы хотите удалить занятие?"
+                                                                        onConfirm={() => deleteLesson(lesson.lesson.lessonId)}
+                                                                        okText="Да"
+                                                                        cancelText="Нет">
+                                                                        <DeleteOutlined style={{fontSize: 14}}/>
+                                                                    </Popconfirm>
+                                                                </div>}
+                                                            </Tag>
+                                                        )
+                                                } else if (lesson.type === "Booked") {
+                                                    return (
+                                                        <Tag color={lessonColors[lesson.type]}
+                                                             key={lesson.bookedLesson.id}
+                                                             bordered
+                                                             style={{width: '100%',
+                                                                 display:'flex', flexDirection:'column',
+                                                                 paddingTop:4, paddingBottom: 4,
+                                                                 whiteSpace: "pre-wrap",
+                                                                 overflowWrap: "break-word"}}>
+                                                        <span style={{fontSize: 16,
+                                                            fontWeight: 500}}>{lesson.bookedLesson.description}</span>
+                                                            <span style={{fontSize: 12}}>{lesson.bookedLesson.audience.name}</span>
+                                                            <span style={{fontSize: 13}}>{lesson.bookedLesson.groups.map(group => group.name).join(", ")}</span>
+                                                        </Tag>
+                                                        )
+                                                } else {
+                                                    return null
+                                                }
                                             })
                                         }
                                     </div>
@@ -285,60 +341,56 @@ function Schedule () {
                     })}
                 </div>
             </div>
-            {/*<Modal
+            <Modal
                 title="Бронирование аудитории"
                 centered
                 open={open}
-                //onOk={handleOk}
-                onCancel={handleCancel}
+                onOk={addBook}
+                onCancel={() => setOpen(false)}
                 width={700}
             >
                 Выберите день
                 <div>
-                    {/*<DatePicker format={'YYYY-MM-DD'}
-                                onChange={(value) => setDate(value)}
-                                placeholder={'Выберите дату'}/>
                     <DatePicker
-                        selected={startDate}
-                        onChange={handleDateChange}
-                        startDate={startDate}
-                        endDate={endDate}
-                        selectsRange
-                        filterDate={isWeekday}
+                        value={bookDate}
+                        onChange={(value) => setBookDate(value)}
+                        format="YYYY-MM-DD"
                     />
                 </div>
                 Выберите пару
                 <div>
                     <Select
                         placeholder="Выберите пару"
-                        onChange={(value) => console.log(value)}
+                        style={{width: '100%'}}
+                        onChange={(value) => setTimeSlot(value)}
+                        value={timeSlot}
                         options={[
                             {
-                                value: '1',
+                                value: 1,
                                 label: '1 пара',
                             } ,
                             {
-                                value: '2',
+                                value: 2,
                                 label: '2 пара',
                             },
                             {
-                                value: '3',
+                                value: 3,
                                 label: '3 пара',
                             },
                             {
-                                value: '4',
+                                value: 4,
                                 label: '4 пара',
                             },
                             {
-                                value: '5',
+                                value: 5,
                                 label: '5 пара',
                             },
                             {
-                                value: '6',
+                                value: 6,
                                 label: '6 пара',
                             },
                             {
-                                value: '7',
+                                value: 7,
                                 label: '7 пара',
                             }
                         ]}
@@ -352,10 +404,31 @@ function Schedule () {
                         optionFilterProp="children"
                         filterOption={filterOption}
                         options={options}
+                        value={audience}
+                        onChange={(value) => setAudience(value)}
                         style={{width: '100%'}}
                     />
                 </div>
-            </Modal>*/}
+                Выберите группы
+                <div>
+                    <Select
+                        mode="multiple"
+                        allowClear
+                        placeholder="Выберите группы"
+                        onChange={(value) => setSelectedGroups(value)}
+                        options={groupsOptions}
+                        value={selectedGroups}
+                        style={{width: '100%'}}
+                    />
+                </div>
+                Описание
+                <div>
+                    <Input
+                        value={description}
+                        onChange={(event) => setDescription(event.target.value)}
+                    />
+                </div>
+            </Modal>
             <Modal
                 title="Создание занятия"
                 centered

@@ -1,0 +1,18 @@
+.mainContainer {
+    min-height: calc(100dvh - 64px);
+    /*text-align: center;*/
+    padding: 20px;
+}
+
+.panel {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    align-items: center;
+    background: #FFFFFF;
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 50px;
+    flex-wrap: nowrap;
+    flex-direction: column;
+}

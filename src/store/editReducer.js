@@ -1,5 +1,3 @@
-import {scheduleAPI} from "../api/scheduleAPI";
-import {getAudiencesActionCreator} from "./scheduleReducer";
 import {editAPI} from "../api/editAPI";
 
 const GET_PROFESSORS = 'GET_PROFESSORS';
