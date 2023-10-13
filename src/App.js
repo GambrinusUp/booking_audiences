@@ -8,6 +8,7 @@ import React, {useEffect, useState} from "react";
 import TabPane from "antd/es/tabs/TabPane";
 import {KeyOutlined, MailOutlined, UserOutlined} from "@ant-design/icons";
 import {authAPI} from "./api/authAPI";
+import Editing from "./pages/editing_page/Editing";
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -129,6 +130,7 @@ function App() {
                   <Routes>
                       <Route path='/schedule/:id' element={<Schedule />} />
                       <Route path='/' element={<SelectSchedule />} />
+                      <Route path='/edit' element={<Editing /> } />
                   </Routes>
                   <Modal
                       centered

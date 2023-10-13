@@ -38,6 +38,9 @@
 }
 
 .emptyCell {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     min-width: 80px;
     padding: 4px;
     border: 1px solid #ccc;

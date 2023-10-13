@@ -1,13 +1,26 @@
 import styles from "../select_schedule_page/select_schedule.module.css";
 import {Button, Card, Select} from "antd";
 import {Link} from "react-router-dom";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {useDispatch, useSelector} from "react-redux";
+import {getGroupsThunkCreator} from "../../store/scheduleReducer";
 
 function SelectSchedule() {
-    const [groupId, setGroupId] = useState('1c232119-97c7-11eb-812c-005056bc52bb');
+    const dispatch = useDispatch();
+    const groups = useSelector((state) => state.schedulePage.groups);
+    const [groupId, setGroupId] = useState('');
+
+    const options = groups.map(({ id, name }) => ({
+        value: id,
+        label: name,
+    }));
 
     const filterOption = (input, option) =>
         (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+
+    useEffect(() => {
+        dispatch(getGroupsThunkCreator());
+    }, []);
 
     return (
         <>
@@ -33,27 +46,14 @@ function SelectSchedule() {
                     <div style={{
                         paddingTop:10
                     }}>
-                        <Select
+                        {groups && <Select
                             showSearch
                             placeholder="Выберите группу"
                             optionFilterProp="children"
                             filterOption={filterOption}
                             onChange={(value) => setGroupId(value)}
-                            options={[
-                                {
-                                    value: '1c232119-97c7-11eb-812c-005056bc52bb',
-                                    label: 'Группа 972101',
-                                },
-                                {
-                                    value: 'e16bbdff-981c-11eb-812c-005056bc52bb',
-                                    label: 'Группа 972102',
-                                },
-                                {
-                                    value: '807a6d55-d3ef-11eb-812f-005056bc52bb',
-                                    label: 'Группа 972103',
-                                },
-                            ]}
-                        />
+                            options={options}
+                        />}
                     </div>
                     <Link to={`/schedule/${groupId}`} >
                         <Button style={{marginTop: 10}}
