@@ -29,6 +29,42 @@ const editReducer = (state = initialState, action) => {
     }
 };
 
+export const deleteGroupThunkCreator = (id, token) => (dispatch) => {
+    return editAPI.deleteGroup(id, token).then(
+        (data) => {
+            console.log(data.status);
+            if(data.status === 401)
+                return Promise.reject();
+            if(data.status === 204)
+                return Promise.resolve();
+        }
+    )
+}
+
+export const editGroupThunkCreator = (id, name, token) => (dispatch) => {
+    return editAPI.editGroup(id, name, token).then(
+        (data) => {
+            console.log(data.status);
+            if(data.status === 401)
+                return Promise.reject();
+            if(data.status === 200)
+                return Promise.resolve();
+        }
+    )
+}
+
+export const addGroupThunkCreator = (name, token) => (dispatch) => {
+    return editAPI.addGroup(name, token).then(
+        (data) => {
+            console.log(data.status);
+            if(data.status === 401)
+                return Promise.reject();
+            if(data.status === 200)
+                return Promise.resolve();
+        }
+    )
+}
+
 export const deleteAudienceThunkCreator = (id, token) => (dispatch) => {
     return editAPI.deleteAudience(id, token).then(
         (data) => {

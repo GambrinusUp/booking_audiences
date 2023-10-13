@@ -6,7 +6,7 @@ import TabPane from "antd/es/tabs/TabPane";
 import {KeyOutlined, MailOutlined, PlusOutlined, UserOutlined} from "@ant-design/icons";
 import {useDispatch, useSelector} from "react-redux";
 import {
-    addAudienceThunkCreator,
+    addAudienceThunkCreator, addGroupThunkCreator,
     addProfessorsThunkCreator,
     addSubjectThunkCreator, getAudiences1ThunkCreator, getAudiencesThunkCreator,
     getProfessorsThunkCreator,
@@ -16,20 +16,25 @@ import ProfessorItem from "../../components/ProfessorItem";
 import {authAPI} from "../../api/authAPI";
 import SubjectItem from "../../components/SubjectItem";
 import AudienceItem from "../../components/AudienceItem";
+import {getGroupsThunkCreator} from "../../store/scheduleReducer";
+import GroupItem from "../../components/GroupItem";
 
 function Editing() {
     const navigate = useNavigate();
     const [fullName, setFullName] = useState("");
     const [nameSubject, setNameSubject] = useState("");
     const [nameAudience, setNameAudience] = useState("");
+    const [groupName, setGroupName] = useState("");
     const [shortName, setShortName] = useState("");
     const [activeTab, setActiveTab] = useState('1');
     const [openAdd, setOpenAdd] = useState(false);
     const [openAddSubject, setOpenAddSubject] = useState(false);
     const [openAddAudience, setOpenAddAudience] = useState(false);
+    const [openAddGroup, setOpenAddGroup] = useState(false);
     const professors = useSelector((state) => state.editPage.professors);
     const subjects = useSelector((state) => state.editPage.subjects);
     const audiences = useSelector((state) => state.editPage.audiences);
+    const groups = useSelector((state) => state.schedulePage.groups);
     const dispatch = useDispatch();
     const [messageApi, contextHolder] = message.useMessage();
 
@@ -115,6 +120,35 @@ function Editing() {
         }
     }
 
+    const handleAddGroup = () => {
+        let object = JSON.parse (localStorage.getItem ("data"));
+        const isDuplicate = groups.some(group => group.name.toLowerCase() === groupName.toLowerCase());
+        if(groupName !== '') {
+            if (isDuplicate) {
+                warning('Такая группа уже существует');
+            } else {
+                dispatch(addGroupThunkCreator(nameAudience, object.accessToken)).then(() => {
+                    success("Группа добавлена");
+                    dispatch(getGroupsThunkCreator());
+                    setOpenAddGroup(false);
+                }).catch(() => {
+                    authAPI.refresh(object.refreshToken).then((data) => {
+                        if(data.status === 200) {
+                            navigate(0);
+                            dispatch(addGroupThunkCreator(nameAudience, object.accessToken)).then(() => {
+                                success("Группа добавлена");
+                                dispatch(getGroupsThunkCreator());
+                                setOpenAddGroup(false);
+                            })
+                        }
+                    })
+                });
+            }
+        } else {
+            warning("Пустое поле");
+        }
+    }
+
     const warning = (error) => {
         messageApi.open({
             type: 'warning',
@@ -133,6 +167,7 @@ function Editing() {
         dispatch(getProfessorsThunkCreator());
         dispatch(getSubjectsThunkCreator());
         dispatch(getAudiences1ThunkCreator());
+        dispatch(getGroupsThunkCreator());
         let object = JSON.parse (localStorage.getItem ("data"));
         console.log(object);
         if(object.role[0] !== 'Editor')
@@ -167,6 +202,14 @@ function Editing() {
                             </Button>
                             {audiences && audiences.map((value) => (
                                 <AudienceItem name={value.name} key={value.id} id={value.id} />
+                            ))}
+                        </TabPane>
+                        <TabPane tab="Редактирование групп" key="4">
+                            <Button icon={<PlusOutlined />} style={{marginBottom: 14}} onClick={() => setOpenAddGroup(true)}>
+                                Добавить группу
+                            </Button>
+                            {groups && groups.map((value) => (
+                                <GroupItem name={value.name} key={value.id} id={value.id} />
                             ))}
                         </TabPane>
                     </Tabs>
@@ -219,6 +262,21 @@ function Editing() {
                         style={{marginBottom: 10}}
                         value={nameAudience}
                         onChange={(event) => setNameAudience(event.target.value)}
+                    />
+                </Modal>
+                <Modal
+                    title="Добавление группы"
+                    centered
+                    open={openAddGroup}
+                    onOk={handleAddGroup}
+                    onCancel={() => setOpenAddGroup(false)}
+                    width={700}
+                >
+                    Название группы
+                    <Input
+                        style={{marginBottom: 10}}
+                        value={groupName}
+                        onChange={(event) => setGroupName(event.target.value)}
                     />
                 </Modal>
             </div>

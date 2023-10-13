@@ -1,16 +1,37 @@
 import styles from './schedule.module.css'
 import React, {useEffect, useState} from "react";
 import moment from 'moment';
-import {Button, DatePicker, Modal, Popconfirm, Select, Tag} from "antd";
+import {Button, Modal, Popconfirm, Select, Tag, DatePicker, message} from "antd";
 import {DeleteOutlined, EditOutlined, LeftOutlined, PlusOutlined, RightOutlined, TagOutlined} from "@ant-design/icons";
 import {useDispatch, useSelector} from "react-redux";
-import {getAudiencesThunkCreator, getScheduleThunkCreator} from "../../store/scheduleReducer";
-import {useParams} from "react-router-dom";
+import {
+    addLessonThunkCreator, deleteLessonThunkCreator,
+    getAudiencesThunkCreator,
+    getGroupsThunkCreator,
+    getScheduleThunkCreator
+} from "../../store/scheduleReducer";
+import {useNavigate, useParams} from "react-router-dom";
+import { lessonColors, times, month, weeks } from '../constants';
+import {
+    addProfessorsThunkCreator,
+    getAudiences1ThunkCreator,
+    getProfessorsThunkCreator,
+    getSubjectsThunkCreator
+} from "../../store/editReducer";
+import {authAPI} from "../../api/authAPI";
+
+const { RangePicker } = DatePicker;
 
 function Schedule () {
     const { id } = useParams();
+    const navigate = useNavigate();
+    const [messageApi, contextHolder] = message.useMessage();
     const scheduleData = useSelector((state) => state.schedulePage.schedule);
-    const audiences = useSelector((state) => state.schedulePage.audiences);
+    //const audiences = useSelector((state) => state.schedulePage.audiences);
+    const professors = useSelector((state) => state.editPage.professors);
+    const subjects = useSelector((state) => state.editPage.subjects);
+    const audiences = useSelector((state) => state.editPage.audiences);
+    const groups = useSelector((state) => state.schedulePage.groups);
     const dispatch = useDispatch();
     const [isStudent, setStudent] = useState(false);
     const [isAdmin, setAdmin] = useState(false);
@@ -18,87 +39,122 @@ function Schedule () {
     const [openEdit, setOpenEdit] = useState(false);
     const [currentWeekDates, setCurrentWeekDates] = useState([]);
     const [date, setDate] = useState('');
-    const lessonColors = {
-            "LECTURE": "red",
-            "SEMINAR": "orange",
-            "PRACTICE": "geekblue",
-            "LABORATORY": "blue",
-            "INDIVIDUAL": "cyan",
-            "OTHER": "green",
-            "CONTROL_POINT": "purple",
-            "EXAM": "purple",
-            "CREDIT": "purple",
-            "DIFFERENTIAL_CREDIT": "purple",
-            "CONSULTATION": "pink",
-            "BOOKING":"default"
-    }
-    const times = [
-        {
-            start: '8:45',
-            end: '10:20',
-            lessonNumber: 1
-        },
-        {
-            start: '10:35',
-            end: '12:10',
-            lessonNumber: 2
-        },
-        {
-            start: '12:25',
-            end: '14:00',
-            lessonNumber: 3
-        },
-        {
-            start: '14:45',
-            end: '16:20',
-            lessonNumber: 4
-        },
-        {
-            start: '16:35',
-            end: '18:10',
-            lessonNumber: 5
-        },
-        {
-            start: '18:25',
-            end: '20:00',
-            lessonNumber: 6
-        },
-        {
-            start: '20:15',
-            end: '21:50',
-            lessonNumber: 7
-        }
-    ];
-    const month = {
-        '01' : 'янв.',
-        '02' : 'февр.',
-        '03' : 'март',
-        '04' : 'апр.',
-        '05' : 'май',
-        '06' : 'июнь',
-        '07' : 'июль',
-        '08' : 'авг.',
-        '09' : 'сент.',
-        '10' : 'окт.',
-        '11' : 'нояб.',
-        '12' : 'дек.',
+    const [selectedGroups, setSelectedGroups] = useState([]);
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+
+    const [day, setDay] = useState('');
+    const [timeSlot, setTimeSlot] = useState('');
+    const [audience, setAudience] = useState('');
+    const [typeLesson, setTypeLesson] = useState('');
+    const [subject, setSubject] = useState('');
+    const [professor, setProfessor] = useState('');
+
+    const [selectedDateRange, setSelectedDateRange] = useState([]);
+
+    const handleDateChange = (dates) => {
+        setSelectedDateRange(dates);
     };
-    const weeks = {
-        0 : 'ПН',
-        1 : 'ВТ',
-        2 : 'СР',
-        3 : 'ЧТ',
-        4 : 'ПТ',
-        5 : 'СБ',
-    }
+
     const options = audiences.map(({ id, name }) => ({
         value: id,
         label: name,
     }));
+
+    const subjectOptions = subjects.map(({ id, name }) => ({
+        value: id,
+        label: name,
+    }));
+
+    const groupsOptions = groups.map(({ id, name }) => ({
+        value: id,
+        label: name,
+    }));
+
+    const professorOptions = professors.map(({ id, fullName }) => ({
+        value: id,
+        label: fullName,
+    }));
+
     const filterOption = (input, option) =>
         (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
 
+    const warning = (error) => {
+        messageApi.open({
+            type: 'warning',
+            content: error,
+        });
+    };
+
+    const success = (message) => {
+        messageApi.open({
+            type: 'success',
+            content: message,
+        });
+    };
+
+    function deleteLesson (id) {
+        console.log(id);
+        const currentDate = moment();
+        const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
+        const endOfWeek = currentDate.endOf('isoWeek').format('YYYY-MM-DD');
+        const weekDates = [];
+        let currentDay = moment(startOfWeek);
+        while (currentDay.isSameOrBefore(endOfWeek)) {
+            weekDates.push(currentDay.format('YYYY-MM-DD'));
+            currentDay.add(1, 'day');
+        }
+        setCurrentWeekDates(weekDates);
+
+
+        let object = JSON.parse (localStorage.getItem ("data"));
+        dispatch(deleteLessonThunkCreator(id, object.accessToken)).then(() => {
+            success('Занятие уадлено');
+            dispatch(getScheduleThunkCreator(id, weekDates[0]));
+        }).catch((status) => {
+            console.log(status);
+            if(status === 401) {
+                authAPI.refresh(object.refreshToken).then((data) => {
+                    if(data.status === 200) {
+                        navigate(0);
+                    }
+                })
+            }
+        });
+    }
+
     const handleOk = () => {
+        const currentDate = moment();
+        const startOfWeek = currentDate.startOf('isoWeek').format('YYYY-MM-DD');
+        const endOfWeek = currentDate.endOf('isoWeek').format('YYYY-MM-DD');
+        const weekDates = [];
+        let currentDay = moment(startOfWeek);
+        while (currentDay.isSameOrBefore(endOfWeek)) {
+            weekDates.push(currentDay.format('YYYY-MM-DD'));
+            currentDay.add(1, 'day');
+        }
+        setCurrentWeekDates(weekDates);
+
+
+        let object = JSON.parse (localStorage.getItem ("data"));
+        dispatch(addLessonThunkCreator(day, selectedDateRange[0].format('YYYY-MM-DD'),
+            selectedDateRange[1].format('YYYY-MM-DD'), timeSlot, audience, typeLesson, subject,
+            professor, selectedGroups,  object.accessToken)).then(() => {
+                success('Занятие создано');
+                dispatch(getScheduleThunkCreator(id, weekDates[0]));
+        }).catch((status) => {
+                console.log(status);
+                if(status === 409) {
+                    warning('Занятие создано');
+                }
+                if(status === 401) {
+                    authAPI.refresh(object.refreshToken).then((data) => {
+                        if(data.status === 200) {
+                            navigate(0);
+                        }
+                    })
+                }
+        });
         setOpen(false);
     };
 
@@ -123,9 +179,12 @@ function Schedule () {
         setCurrentWeekDates(weekDates);
         console.log(weekDates);
         console.log(currentWeekDates[0]);
-        dispatch(getScheduleThunkCreator(id, weekDates[0], weekDates[5]));
+        dispatch(getScheduleThunkCreator(id, weekDates[0]));
         console.log(scheduleData);
-        dispatch(getAudiencesThunkCreator());
+        dispatch(getAudiences1ThunkCreator());
+        dispatch(getGroupsThunkCreator());
+        dispatch(getSubjectsThunkCreator());
+        dispatch(getProfessorsThunkCreator());
     }, [dispatch, id]);
 
     function updateWeekDates(weeksToAdd) {
@@ -139,7 +198,7 @@ function Schedule () {
                 newWeekDates.push(currentDay.format('YYYY-MM-DD'));
                 currentDay.add(1, 'day');
             }
-            dispatch(getScheduleThunkCreator('1c232119-97c7-11eb-812c-005056bc52bb', newWeekDates[0], newWeekDates[5]));
+            dispatch(getScheduleThunkCreator(id, newWeekDates[0]));
             return newWeekDates;
         });
         console.log(currentWeekDates);
@@ -148,13 +207,14 @@ function Schedule () {
     return(
         <>
             <div className={styles.mainContainer}>
+                {contextHolder}
                 <div className={styles.panel}>
                     <div className={styles.panelGroupDate}>
                         <span className={styles.panelTitle}> Расписание для группы TestGroup </span>
                         <span>{`${currentWeekDates[0]} - ${currentWeekDates[5]}`}</span>
                     </div>
                     {isAdmin && <Button icon={<EditOutlined />}
-                           className={styles.medBtnWrapper}>
+                           className={styles.medBtnWrapper} onClick={() => setOpenEdit(true)}>
                         <span className={styles.hideText}>Редактировать</span>
                     </Button>}
                     {isStudent && <Button icon={<TagOutlined />}
@@ -189,11 +249,11 @@ function Schedule () {
                                 {scheduleData && scheduleData.map((scheduleColumn, index) => {
                                     return <div className={styles.emptyCell} key={scheduleColumn.date}>
                                         {
-                                            scheduleColumn.lessons.filter(lesson => lesson.lessonNumber ===
+                                            scheduleColumn.timeslots.filter(lesson => lesson.lessonNumber ===
                                                 lessonTime.lessonNumber).map(lesson => {
-                                                return lesson.type === "LESSON" ?
-                                                    <Tag color={lessonColors[lesson.lessonType]}
-                                                         key={lesson.id}
+                                                return lesson.type === "Lesson" ?
+                                                    <Tag color={lessonColors[lesson.lesson.lessonType]}
+                                                         key={lesson.lesson.lessonId}
                                                          bordered
                                                          style={{width: '100%',
                                                              display:'flex', flexDirection:'column',
@@ -201,15 +261,15 @@ function Schedule () {
                                                              whiteSpace: "pre-wrap",
                                                              overflowWrap: "break-word"}}>
                                                         <span style={{fontSize: 16,
-                                                            fontWeight: 500}}>{lesson.title}</span>
-                                                        <span style={{fontSize: 12}}>{lesson.audience.name}</span>
-                                                        <span style={{fontSize: 13}}>{lesson.groups.map(group => group.name).join(", ")}</span>
+                                                            fontWeight: 500}}>{lesson.lesson.subject.name}</span>
+                                                        <span style={{fontSize: 12}}>{lesson.lesson.audience.name}</span>
+                                                        <span style={{fontSize: 13}}>{lesson.lesson.groups.map(group => group.name).join(", ")}</span>
                                                         {isAdmin && <div style={{display: "flex", flexDirection: "row", justifyContent: "flex-end"}}>
                                                             <EditOutlined style={{fontSize: 14, paddingRight: 5}}
                                                                 onClick={() => setOpenEdit(true)}/>
                                                             <Popconfirm
                                                                 title="Вы хотите удалить занятие?"
-                                                                //onConfirm={deleteCourse}
+                                                                onConfirm={() => deleteLesson(lesson.lesson.lessonId)}
                                                                 okText="Да"
                                                                 cancelText="Нет">
                                                                 <DeleteOutlined style={{fontSize: 14}}/>
@@ -225,19 +285,27 @@ function Schedule () {
                     })}
                 </div>
             </div>
-            <Modal
+            {/*<Modal
                 title="Бронирование аудитории"
                 centered
                 open={open}
-                onOk={handleOk}
+                //onOk={handleOk}
                 onCancel={handleCancel}
                 width={700}
             >
                 Выберите день
                 <div>
-                    <DatePicker format={'YYYY-MM-DD'}
+                    {/*<DatePicker format={'YYYY-MM-DD'}
                                 onChange={(value) => setDate(value)}
                                 placeholder={'Выберите дату'}/>
+                    <DatePicker
+                        selected={startDate}
+                        onChange={handleDateChange}
+                        startDate={startDate}
+                        endDate={endDate}
+                        selectsRange
+                        filterDate={isWeekday}
+                    />
                 </div>
                 Выберите пару
                 <div>
@@ -287,16 +355,196 @@ function Schedule () {
                         style={{width: '100%'}}
                     />
                 </div>
-            </Modal>
+            </Modal>*/}
             <Modal
-                title="Редактирование занятия"
+                title="Создание занятия"
                 centered
                 open={openEdit}
-                //onOk={handleOk}
+                onOk={handleOk}
                 onCancel={() => setOpenEdit(false)}
                 width={700}
             >
-
+                Выберите день
+                <div>
+                    <Select
+                        style={{width: '100%'}}
+                        placeholder="Выберите день"
+                        onChange={(value) => setDay(value)}
+                        value={day}
+                        options={[
+                            {
+                                value: 'Monday',
+                                label: 'Понедельник',
+                            } ,
+                            {
+                                value: 'Tuesday',
+                                label: 'Вторник',
+                            },
+                            {
+                                value: 'Wednesday',
+                                label: 'Среда',
+                            },
+                            {
+                                value: 'Thursday',
+                                label: 'Четверг',
+                            },
+                            {
+                                value: 'Friday',
+                                label: 'Пятница',
+                            },
+                            {
+                                value: 'Saturday',
+                                label: 'Суббота',
+                            }
+                        ]}
+                    />
+                </div>
+                Выберите дату
+                <div>
+                    {/*<DatePicker
+                        selected={startDate}
+                        onChange={handleDateChange}
+                        startDate={startDate}
+                        endDate={endDate}
+                        selectsRange
+                        filterDate={isWeekday}
+                        dateFormat="yyyy-MM-dd"
+                    />*/}
+                    <RangePicker
+                        value={selectedDateRange}
+                        onChange={handleDateChange}
+                        format="YYYY-MM-DD"
+                    />
+                </div>
+                Выберите пару
+                <div>
+                    <Select
+                        style={{width: '100%'}}
+                        placeholder="Выберите пару"
+                        onChange={(value) => setTimeSlot(value)}
+                        value={timeSlot}
+                        options={[
+                            {
+                                value: '1',
+                                label: '1 пара',
+                            } ,
+                            {
+                                value: '2',
+                                label: '2 пара',
+                            },
+                            {
+                                value: '3',
+                                label: '3 пара',
+                            },
+                            {
+                                value: '4',
+                                label: '4 пара',
+                            },
+                            {
+                                value: '5',
+                                label: '5 пара',
+                            },
+                            {
+                                value: '6',
+                                label: '6 пара',
+                            },
+                            {
+                                value: '7',
+                                label: '7 пара',
+                            }
+                        ]}
+                    />
+                </div>
+                Выберите аудиторию
+                <div>
+                    <Select
+                        showSearch
+                        placeholder="Выберите аудиторию"
+                        optionFilterProp="children"
+                        filterOption={filterOption}
+                        options={options}
+                        value={audience}
+                        onChange={(value) => setAudience(value)}
+                        style={{width: '100%'}}
+                    />
+                </div>
+                Выберите тип занятия
+                <div>
+                    <Select
+                        style={{width: '100%'}}
+                        placeholder="Выберите тип занятия"
+                        value={typeLesson}
+                        onChange={(value) => setTypeLesson(value)}
+                        options={[
+                            {
+                                value: 'Lecture',
+                                label: 'Лекция',
+                            } ,
+                            {
+                                value: 'Practice',
+                                label: 'Практика',
+                            },
+                            {
+                                value: 'Laboratory',
+                                label: 'Лабораторная',
+                            },
+                            {
+                                value: 'Seminar',
+                                label: 'Семинар',
+                            },
+                            {
+                                value: 'Individual',
+                                label: 'Индивидуальная работа',
+                            },
+                            {
+                                value: 'ControlPoint',
+                                label: 'Контрольная точка',
+                            },
+                            {
+                                value: 'Other',
+                                label: 'Другое',
+                            }
+                        ]}
+                    />
+                </div>
+                Выберите предмет
+                <div>
+                    <Select
+                        showSearch
+                        placeholder="Выберите предмет"
+                        optionFilterProp="children"
+                        filterOption={filterOption}
+                        options={subjectOptions}
+                        value={subject}
+                        onChange={(value) => setSubject(value)}
+                        style={{width: '100%'}}
+                    />
+                </div>
+                Выберите преподавателя
+                <div>
+                    <Select
+                        value={professor}
+                        onChange={(value) => setProfessor(value)}
+                        showSearch
+                        placeholder="Выберите преподавателя"
+                        optionFilterProp="children"
+                        filterOption={filterOption}
+                        options={professorOptions}
+                        style={{width: '100%'}}
+                    />
+                </div>
+                Выберите группы
+                <div>
+                    <Select
+                        mode="multiple"
+                        allowClear
+                        placeholder="Выберите группы"
+                        onChange={(value) => setSelectedGroups(value)}
+                        options={groupsOptions}
+                        value={selectedGroups}
+                        style={{width: '100%'}}
+                    />
+                </div>
             </Modal>
         </>
     )

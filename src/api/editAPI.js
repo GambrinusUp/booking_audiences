@@ -196,7 +196,62 @@ function deleteAudience(id, token) {
         })
 }
 
+function addGroup(name, token) {
+    return axios.post(API_URL + 'groups', {
+        "name": name
+    },{
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    })
+        .then((response) => {
+            console.log(response);
+            return {status: response.status, groups: response.data};
+        })
+        .catch((error) => {
+            console.log(error);
+            return {status: error.response.status};
+        })
+}
+
+function editGroup(id, name, token) {
+    return axios.put(API_URL + 'groups/' + id, {
+        "name": name
+    },{
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    })
+        .then((response) => {
+            console.log(response);
+            return {status: response.status, groups: response.data};
+        })
+        .catch((error) => {
+            console.log(error);
+            return {status: error.response.status};
+        })
+}
+
+function deleteGroup(id, token) {
+    return axios.delete(API_URL + 'groups/' + id, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    })
+        .then((response) => {
+            console.log(response);
+            return {status: response.status, groups: response.data};
+        })
+        .catch((error) => {
+            console.log(error);
+            return {status: error.response.status};
+        })
+}
+
 export const editAPI = {
+    deleteGroup : deleteGroup,
+    editGroup : editGroup,
+    addGroup : addGroup,
     deleteAudience : deleteAudience,
     editAudience : editAudience,
     addAudience : addAudience,
