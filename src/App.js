@@ -1,7 +1,7 @@
 import './App.css';
 import {Button, DatePicker, Input, Layout, message, Modal, Select, Tabs} from "antd";
 import {Content, Header} from "antd/es/layout/layout";
-import {BrowserRouter as Router, Routes, Route, Link} from 'react-router-dom';
+import {BrowserRouter as Router, Routes, Route, Link, useNavigate} from 'react-router-dom';
 import Schedule from "./pages/schedule_page/Schedule";
 import SelectSchedule from "./pages/select_schedule_page/SelectSchedule";
 import React, {useEffect, useState} from "react";
@@ -9,6 +9,7 @@ import TabPane from "antd/es/tabs/TabPane";
 import {KeyOutlined, MailOutlined, UserOutlined} from "@ant-design/icons";
 import {authAPI} from "./api/authAPI";
 import Editing from "./pages/editing_page/Editing";
+import Booking from "./pages/booking_page/Booking";
 
 function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -50,6 +51,7 @@ function App() {
                                 setIsLoggedIn(true);
                                 if(data.tokens[0] === 'Editor')
                                     setIsAdmin(true);
+                                window.location.reload();
                             } else {
                                 messageApi.warning("Возникла ошибка");
                             }
@@ -66,6 +68,7 @@ function App() {
                             if(data.status === 200) {
                                 localStorage.setItem("data", JSON.stringify(data.tokens));
                                 setIsLoggedIn(true);
+                                window.location.reload();
                             } else {
                                 if(data.status === 409)
                                     messageApi.warning("Пользователь с таким email уже существует");
@@ -115,6 +118,10 @@ function App() {
                           color: 'white',
                           paddingLeft: 10
                       }}>Редактирование</Link>}
+                      {isAdmin && <Link to="/booking" style={{
+                          color: 'white',
+                          paddingLeft: 10
+                      }}>Заявки на бронирование</Link>}
                   </div>
                   {!isLoggedIn && <div>
                       <Button onClick={() => setOpen(true)}>
@@ -131,6 +138,7 @@ function App() {
                       <Route path='/schedule/:id' element={<Schedule />} />
                       <Route path='/' element={<SelectSchedule />} />
                       <Route path='/edit' element={<Editing /> } />
+                      <Route path='/booking' element={<Booking /> } />
                   </Routes>
                   <Modal
                       centered
